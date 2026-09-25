@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<!-- Sistem KPI Karyawan — versi offline/standalone -->
+<html lang="id"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sistem KPI Karyawan</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F0F4F8;--surface:#FFF;--surface-2:#F7FAFC;--border:#E2E8F0;
+  --text-primary:#1A202C;--text-secondary:#4A5568;--text-muted:#A0AEC0;
+  --accent:#2B6CB0;--accent-light:#EBF4FF;
+  --hrd:#6B46C1;--hrd-light:#FAF5FF;
+  --atasan:#2C7A7B;--atasan-light:#E6FFFA;
+  --success:#276749;--success-bg:#F0FFF4;
+  --warning:#744210;--warning-bg:#FFFAF0;
+  --danger:#742A2A;--danger-bg:#FFF5F5;
+  --grade-a:#276749;--grade-b:#2B6CB0;--grade-c:#744210;--grade-d:#742A2A;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  box-sizing:border-box;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0D1117;--surface:#161B22;--surface-2:#1C2128;--border:#30363D;
+  --text-primary:#E6EDF3;--text-secondary:#8B949E;--text-muted:#484F58;
+  --accent:#58A6FF;--accent-light:#0D2137;
+  --hrd:#9F7AEA;--hrd-light:#1A0A2E;
+  --atasan:#3FBFBF;--atasan-light:#0B2222;
+  --success:#3FB950;--success-bg:#0B2010;
+  --warning:#D29922;--warning-bg:#1C1500;
+  --danger:#F85149;--danger-bg:#1C0B0B;
+}}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text-primary);font-size:14px;line-height:1.6}
+
+/* ── LOGIN ── */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;width:100%;max-width:440px}
+.login-logo{font-family:'DM Serif Display',serif;font-size:28px;margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--text-muted);margin-bottom:28px}
+.role-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.role-card{
+  border:2px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;
+  transition:border-color .15s,background .15s;text-align:center
+}
+.role-card:hover{border-color:var(--accent);background:var(--accent-light)}
+.role-card.selected-hrd{border-color:var(--hrd);background:var(--hrd-light)}
+.role-card.selected-atasan{border-color:var(--atasan);background:var(--atasan-light)}
+.role-icon{font-size:28px;margin-bottom:6px}
+.role-name{font-size:13px;font-weight:700}
+.role-desc{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+/* ── APP LAYOUT ── */
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sidebar-logo{padding:18px 20px;border-bottom:1px solid var(--border)}
+.sidebar-logo h1{font-family:'DM Serif Display',serif;font-size:18px;line-height:1.2}
+.sidebar-logo span{font-size:11px;color:var(--text-muted);display:block;margin-top:2px}
+.role-badge-sidebar{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-top:8px}
+.badge-hrd-side{background:var(--hrd-light);color:var(--hrd)}
+.badge-atasan-side{background:var(--atasan-light);color:var(--atasan)}
+.sidebar-nav{padding:12px 8px;flex:1}
+.nav-label{font-size:10px;font-weight:600;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;padding:8px 12px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-secondary);border:none;background:none;width:100%;text-align:left;transition:background .15s,color .15s}
+.nav-item:hover{background:var(--bg);color:var(--text-primary)}
+.nav-item.active{background:var(--accent-light);color:var(--accent)}
+.nav-item .icon{font-size:16px;width:20px;text-align:center}
+.sidebar-foot{padding:16px;border-top:1px solid var(--border)}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:16px;font-weight:600}
+.topbar-sub{font-size:12px;color:var(--text-muted);margin-top:1px}
+.content{flex:1;overflow-y:auto;padding:24px}
+
+/* ── BUTTON ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:opacity .15s,transform .1s}
+.btn:hover{opacity:.88}.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-hrd{background:var(--hrd);color:#fff}
+.btn-atasan{background:var(--atasan);color:#fff}
+.btn-secondary{background:var(--surface-2);color:var(--text-secondary);border:1px solid var(--border)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-danger{background:var(--danger-bg);color:var(--danger);border:1px solid #FEB2B2}
+.btn-logout{background:none;border:1px solid var(--border);color:var(--text-secondary);width:100%;justify-content:center}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.card-title{font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
+.stat-value{font-family:'DM Serif Display',serif;font-size:32px;color:var(--text-primary);line-height:1}
+.stat-sub{font-size:12px;color:var(--text-muted);margin-top:4px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;background:var(--surface-2);border-bottom:1px solid var(--border)}
+th:first-child{border-radius:8px 0 0 0}th:last-child{border-radius:0 8px 0 0}
+td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--text-secondary);vertical-align:middle}
+tr:last-child td{border-bottom:none}tr:hover td{background:var(--surface-2)}
+.td-name{font-weight:600;color:var(--text-primary)}.td-dept{font-size:11px;color:var(--text-muted);margin-top:1px}
+
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-a{background:var(--success-bg);color:var(--grade-a)}
+.badge-b{background:var(--accent-light);color:var(--grade-b)}
+.badge-c{background:var(--warning-bg);color:var(--grade-c)}
+.badge-d{background:var(--danger-bg);color:var(--grade-d)}
+.badge-pending{background:var(--surface-2);color:var(--text-muted);border:1px solid var(--border)}
+.badge-partial{background:var(--warning-bg);color:var(--warning)}
+.badge-hrd{background:var(--hrd-light);color:var(--hrd)}
+.badge-atasan-b{background:var(--atasan-light);color:var(--atasan)}
+
+/* ── SCORE BAR ── */
+.score-bar-wrap{display:flex;align-items:center;gap:10px}
+.score-bar-track{flex:1;height:6px;background:var(--border);border-radius:999px;overflow:hidden;min-width:60px}
+.score-bar-fill{height:100%;border-radius:999px;transition:width .4s}
+.fill-a{background:var(--grade-a)}.fill-b{background:var(--grade-b)}
+.fill-c{background:var(--grade-c)}.fill-d{background:var(--grade-d)}
+.fill-hrd{background:var(--hrd)}.fill-atasan{background:var(--atasan)}
+.score-val{font-size:13px;font-weight:700;min-width:32px}
+
+/* ── FORM ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.full{grid-column:1/-1}
+label{font-size:12px;font-weight:600;color:var(--text-secondary)}
+input,select,textarea{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--text-primary);background:var(--surface);transition:border-color .15s;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;min-height:80px}
+
+/* ── CRITERIA ── */
+.criteria-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.criteria-card{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px}
+.criteria-name{font-size:12px;font-weight:600;margin-bottom:8px}
+.score-input-wrap{display:flex;align-items:center;gap:8px}
+.score-input-wrap input[type="range"]{flex:1;height:4px;padding:0;border:none;cursor:pointer}
+.score-display{width:40px;height:32px;text-align:center;font-weight:700;font-size:14px;padding:4px}
+
+/* ── SECTION HEAD ── */
+.section-head{display:flex;align-items:center;gap:12px;margin:20px 0 14px}
+.section-head h3{font-size:14px;font-weight:700}
+.section-line{flex:1;height:1px;background:var(--border)}
+.weight-chip{display:inline-block;border-radius:6px;font-size:11px;font-weight:700;padding:2px 8px;margin-left:6px}
+.chip-hrd{background:var(--hrd-light);color:var(--hrd)}
+.chip-atasan{background:var(--atasan-light);color:var(--atasan)}
+
+/* ── SCORE SUMMARY ── */
+.score-summary{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px}
+.score-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)}
+.score-row:last-child{border-bottom:none}
+.score-row.total{font-weight:700;color:var(--text-primary)}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:16px;border:1px solid var(--border);width:100%;max-width:700px;max-height:90vh;overflow-y:auto;transform:translateY(16px);transition:transform .2s}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1}
+.modal-title{font-size:16px;font-weight:700}
+.modal-body{padding:24px}
+.modal-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+.close-btn{width:32px;height:32px;border-radius:8px;border:none;background:var(--surface-2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary)}
+.close-btn:hover{background:var(--border)}
+
+/* ── KPI DETAIL ── */
+.kpi-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.kpi-section-head{padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface-2);display:flex;align-items:center;justify-content:space-between}
+.kpi-section-title{font-size:13px;font-weight:700}
+.kpi-section-body{padding:16px 18px}
+.criteria-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.criteria-row:last-child{border-bottom:none}
+.criteria-label{font-size:13px}.criteria-weight{font-size:11px;color:var(--text-muted)}
+
+/* ── AVATAR ── */
+.avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.avatar-wrap{display:flex;align-items:center;gap:10px}
+.av-blue{background:linear-gradient(135deg,#2B6CB0,#2C7A7B);color:#fff}
+.av-purple{background:linear-gradient(135deg,#6B46C1,#9F7AEA);color:#fff}
+.av-teal{background:linear-gradient(135deg,#2C7A7B,#3FBFBF);color:#fff}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:48px 20px;color:var(--text-muted)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty h3{font-size:15px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}
+.empty p{font-size:13px}
+
+/* ── STATUS PILL ── */
+.status-grid{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* ── LOADING ── */
+.loading{display:flex;align-items:center;justify-content:center;padding:60px 20px;color:var(--text-muted);font-size:13px;gap:10px}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── INFO BOX ── */
+.info-box{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px}
+.info-box-hrd{background:var(--hrd-light);border:1px solid #D6BCFA;color:var(--hrd)}
+.info-box-atasan{background:var(--atasan-light);border:1px solid #81E6D9;color:var(--atasan)}
+.info-box-warning{background:var(--warning-bg);border:1px solid #FAD08F;color:var(--warning)}
+
+.period-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--surface-2);border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:600;color:var(--text-secondary)}
+
+/* ── PROGRESS RING ── */
+.two-part-bar{height:10px;border-radius:999px;overflow:hidden;display:flex;background:var(--border)}
+.two-part-hrd{background:var(--hrd)}
+.two-part-atasan{background:var(--atasan)}
+
+@media(max-width:768px){
+  .sidebar{display:none}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .form-grid{grid-template-columns:1fr}
+  .criteria-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     LOGIN SCREEN
+═══════════════════════════════════════════════════════ -->
+<div id="login-screen" class="login-wrap" style="display: none;">
+  <div class="login-card">
+    <div class="login-logo">📊 KPI Karyawan</div>
+    <div class="login-sub">Sistem Penilaian Kinerja — Masuk sebagai peran Anda</div>
+
+    <div class="role-cards" id="role-cards">
+      <div class="role-card selected-hrd" id="rc-hrd" onclick="selectRole('hrd')">
+        <div class="role-icon">🏢</div>
+        <div class="role-name">HRD / Admin</div>
+        <div class="role-desc">Kelola karyawan &amp; nilai kedisiplinan</div>
+      </div>
+      <div class="role-card" id="rc-atasan" onclick="selectRole('atasan')">
+        <div class="role-icon">🎯</div>
+        <div class="role-name">Atasan Divisi</div>
+        <div class="role-desc">Nilai kinerja karyawan di divisi Anda</div>
+      </div>
+    </div>
+
+    <div id="login-form-area">
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Nama HRD / Admin</label>
+        <input id="login-name" placeholder="Masukkan nama Anda..." value="">
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label>Password Admin</label>
+        <input type="password" id="login-pass" placeholder="Password..." value="">
+      </div>
+      <button class="btn btn-hrd" style="width:100%;justify-content:center" onclick="doLogin()">Masuk sebagai HRD</button>
+      <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px">Password default: <strong>hrd123</strong></div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     APP
+═══════════════════════════════════════════════════════ -->
+<div id="app-screen" class="app" style="display: flex;">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>KPI<br>Karyawan</h1>
+      <span>Sistem Penilaian Kinerja</span>
+      <div id="sidebar-role-badge"><span class="role-badge-sidebar badge-hrd-side">
+      🏢 HRD / Admin
+    </span></div>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav"><div class="nav-label">Menu</div><button class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+        <span class="icon">📊</span> Dashboard
+      </button><button class="nav-item" onclick="showPage('karyawan')" id="nav-karyawan">
+        <span class="icon">👥</span> Data Karyawan
+      </button><button class="nav-item" onclick="showPage('nilai-hrd')" id="nav-nilai-hrd">
+        <span class="icon">⏰</span> Nilai Kedisiplinan
+      </button><button class="nav-item" onclick="showPage('rekap')" id="nav-rekap">
+        <span class="icon">📋</span> Rekap KPI
+      </button></nav>
+    <div class="sidebar-foot">
+      <div id="sidebar-user" style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Lukman</div>
+      <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:8px" onclick="downloadHTML()">⬇️ Unduh Sistem</button>
+      <button class="btn btn-logout" onclick="doLogout()">🚪 Keluar</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="page-title">Dashboard</div>
+        <div class="topbar-sub" id="page-sub">Ringkasan KPI seluruh karyawan</div>
+      </div>
+      <div id="topbar-action"></div>
+    </div>
+    <div class="content" id="main-content">
+  
+
+  <div class="stats-grid">
+    <div class="card">
+      <div class="card-title">Total Karyawan</div>
+      <div class="stat-value">1</div>
+      <div class="stat-sub">Terdaftar</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Penilaian Lengkap</div>
+      <div class="stat-value" style="color:var(--grade-a)">1</div>
+      <div class="stat-sub">HRD + Atasan selesai</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Sebagian Dinilai</div>
+      <div class="stat-value" style="color:var(--warning)">0</div>
+      <div class="stat-sub">Menunggu salah satu</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Rata-rata KPI</div>
+      <div class="stat-value">84.1</div>
+      <div class="stat-sub">Bulan ini (data lengkap)</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px">Status Penilaian — Sep 2026</div>
+      
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:12px;flex:1;color:var(--grade-a)">✅ Lengkap (HRD+Atasan)</span>
+          <span style="font-weight:700;font-size:14px;color:var(--grade-a)">1</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:12px;flex:1;color:var(--warning)">⏰ Menunggu Atasan</span>
+          <span style="font-weight:700;font-size:14px;color:var(--warning)">0</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:12px;flex:1;color:var(--atasan)">🎯 Menunggu HRD</span>
+          <span style="font-weight:700;font-size:14px;color:var(--atasan)">0</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:12px;flex:1;color:var(--text-muted)">⬜ Belum Dinilai</span>
+          <span style="font-weight:700;font-size:14px;color:var(--text-muted)">0</span>
+        </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px">Panduan Penilaian</div>
+      <div style="font-size:12px;color:var(--text-secondary);line-height:1.8">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <span style="background:var(--hrd-light);color:var(--hrd);padding:2px 8px;border-radius:6px;font-weight:600;font-size:11px">HRD</span>
+          <span>Menilai <strong>Kedisiplinan</strong> (40% bobot)</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <span style="background:var(--atasan-light);color:var(--atasan);padding:2px 8px;border-radius:6px;font-weight:600;font-size:11px">Atasan</span>
+          <span>Menilai <strong>Kinerja</strong> (60% bobot)</span>
+        </div>
+        <div style="padding-top:10px;border-top:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span class="badge badge-a">A</span>
+              <span style="font-size:11px;color:var(--text-secondary)">86–100 — Sangat Baik</span>
+            </div><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span class="badge badge-b">B</span>
+              <span style="font-size:11px;color:var(--text-secondary)">71–85 — Baik</span>
+            </div><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span class="badge badge-c">C</span>
+              <span style="font-size:11px;color:var(--text-secondary)">56–70 — Cukup</span>
+            </div><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span class="badge badge-d">D</span>
+              <span style="font-size:11px;color:var(--text-secondary)">0–55 — Kurang</span>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">Status Karyawan — Sep 2026</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Karyawan</th><th>Divisi</th>
+          <th>Nilai HRD</th><th>Nilai Atasan</th>
+          <th>KPI Akhir</th><th>Status</th>
+        </tr></thead>
+        <tbody>
+          <tr onclick="na!==null&amp;&amp;showDetailByKar('k_1790320100582','2026-09')" style="cursor:pointer">
+              <td><div class="avatar-wrap">
+                <div class="avatar av-blue">L</div>
+                <div><div class="td-name">Lukman Aji Gutomo</div><div class="td-dept">Staff</div></div>
+              </div></td>
+              <td>HRD</td>
+              <td><span style="font-weight:700;color:var(--hrd)">89</span></td>
+              <td><span style="font-weight:700;color:var(--atasan)">80.8</span></td>
+              <td><strong style="font-size:15px">84.1</strong></td>
+              <td><span class="badge badge-b">B</span></td>
+            </tr>
+        </tbody>
+      </table>
+    </div>
+  </div></div>
+  </main>
+</div>
+
+<!-- ══ MODALS ══ -->
+<!-- Modal Karyawan (HRD) -->
+<div class="modal-overlay" id="modal-karyawan">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="mk-title">Tambah Karyawan</div>
+      <button class="close-btn" onclick="closeModal('modal-karyawan')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Nama Lengkap</label><input id="k-nama" placeholder="Nama karyawan..."></div>
+        <div class="form-group"><label>NIP / ID Karyawan</label><input id="k-nip" placeholder="EMP-001"></div>
+        <div class="form-group"><label>Jabatan</label><input id="k-jabatan" placeholder="Staff, Supervisor, dll."></div>
+        <div class="form-group"><label>Divisi / Departemen</label><input id="k-divisi" placeholder="Keuangan, IT, HRD, dll."></div>
+        <div class="form-group"><label>Nama Atasan Divisi</label><input id="k-atasan" placeholder="Nama atasan langsung..."></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('modal-karyawan')">Batal</button>
+      <button class="btn btn-hrd" onclick="saveKaryawan()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Penilaian HRD (Kedisiplinan) -->
+<div class="modal-overlay" id="modal-hrd">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">⏰ Penilaian Kedisiplinan — HRD</div>
+      <button class="close-btn" onclick="closeModal('modal-hrd')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-hrd-body">
+    <div style="background:var(--hrd-light);border:1px solid #D6BCFA;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:11px;color:var(--hrd);margin-bottom:4px;font-weight:600">KARYAWAN YANG DINILAI</div>
+      <div style="font-weight:700;font-size:15px">Lukman Aji Gutomo</div>
+      <div style="font-size:12px;color:var(--text-secondary)">Staff — HRD | Periode: <strong>Sep 2026</strong></div>
+    </div>
+
+    <div class="section-head">
+      <h3>⏰ Kriteria Kedisiplinan</h3>
+      <span class="weight-chip chip-hrd">Bobot 40%</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="criteria-grid">
+      
+        <div class="criteria-card">
+          <div class="criteria-name">Kehadiran &amp; Tepat Waktu <span style="color:var(--text-muted);font-weight:400">(30%)</span></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Persentase kehadiran dan ketepatan waktu masuk kerja</div>
+          <div class="score-input-wrap">
+            <input type="range" id="sh-hadir" min="0" max="100" value="100" style="accent-color:var(--hrd)" oninput="updateHRDScore('hadir',this.value)">
+            <input type="number" class="score-display" id="dh-hadir" value="100" min="0" max="100" oninput="updateHRDScoreN('hadir',this.value)">
+          </div>
+        </div>
+        <div class="criteria-card">
+          <div class="criteria-name">Ketaatan Jam Kerja <span style="color:var(--text-muted);font-weight:400">(25%)</span></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Kepatuhan jam pulang dan waktu istirahat</div>
+          <div class="score-input-wrap">
+            <input type="range" id="sh-pulang" min="0" max="100" value="70" style="accent-color:var(--hrd)" oninput="updateHRDScore('pulang',this.value)">
+            <input type="number" class="score-display" id="dh-pulang" value="70" min="0" max="100" oninput="updateHRDScoreN('pulang',this.value)">
+          </div>
+        </div>
+        <div class="criteria-card">
+          <div class="criteria-name">Tertib Izin &amp; Cuti <span style="color:var(--text-muted);font-weight:400">(20%)</span></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Prosedur perizinan dan cuti sesuai aturan</div>
+          <div class="score-input-wrap">
+            <input type="range" id="sh-izin" min="0" max="100" value="90" style="accent-color:var(--hrd)" oninput="updateHRDScore('izin',this.value)">
+            <input type="number" class="score-display" id="dh-izin" value="90" min="0" max="100" oninput="updateHRDScoreN('izin',this.value)">
+          </div>
+        </div>
+        <div class="criteria-card">
+          <div class="criteria-name">Kepatuhan Atribut &amp; Seragam <span style="color:var(--text-muted);font-weight:400">(15%)</span></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Penggunaan seragam dan atribut kerja</div>
+          <div class="score-input-wrap">
+            <input type="range" id="sh-seragam" min="0" max="100" value="100" style="accent-color:var(--hrd)" oninput="updateHRDScore('seragam',this.value)">
+            <input type="number" class="score-display" id="dh-seragam" value="100" min="0" max="100" oninput="updateHRDScoreN('seragam',this.value)">
+          </div>
+        </div>
+        <div class="criteria-card">
+          <div class="criteria-name">Sikap &amp; Etika Kerja <span style="color:var(--text-muted);font-weight:400">(10%)</span></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Sopan santun dan perilaku di lingkungan kerja</div>
+          <div class="score-input-wrap">
+            <input type="range" id="sh-sikap" min="0" max="100" value="85" style="accent-color:var(--hrd)" oninput="updateHRDScore('sikap',this.value)">
+            <input type="number" class="score-display" id="dh-sikap" value="85" min="0" max="100" oninput="updateHRDScoreN('sikap',this.value)">
+          </div>
+        </div>
+    </div>
+    <div class="score-summary" id="hrd-summary"><div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase">Skor Kedisiplinan</div>
+    <div class="score-row total"><span>⏰ Total Skor Kedisiplinan</span>
+      <span style="font-size:20px;font-family:'DM Serif Display',serif;color:var(--hrd)">89.0</span>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:8px">Kontribusi ke KPI Akhir: 89.0 × 40% = <strong>35.6</strong></div></div>
+    <div class="form-group" style="margin-top:16px">
+      <label>Catatan HRD (opsional)</label>
+      <textarea id="hrd-catatan" placeholder="Catatan dari HRD...">Sering terlambat masuk saat waktu istirahat selesai</textarea>
+    </div></div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('modal-hrd')">Batal</button>
+      <button class="btn btn-hrd" onclick="saveNilaiHRD()">Simpan Penilaian HRD</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Penilaian Atasan -->
+<div class="modal-overlay" id="modal-atasan">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">🎯 Penilaian Atasan Divisi</div>
+      <button class="close-btn" onclick="closeModal('modal-atasan')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-atasan-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('modal-atasan')">Batal</button>
+      <button class="btn btn-atasan" onclick="saveNilaiAtasan()">Simpan Penilaian Atasan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detail -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Detail Penilaian KPI</div>
+      <button class="close-btn" onclick="closeModal('modal-detail')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-detail-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('modal-detail')">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════
+const KPI_CFG = {
+  kedisiplinan: {
+    label:'Penilaian Kedisiplinan',icon:'⏰',bobot:40,role:'hrd',
+    kriteria:[
+      {id:'hadir',  label:'Kehadiran & Tepat Waktu',    bobot:30,desc:'Persentase kehadiran dan ketepatan waktu masuk kerja'},
+      {id:'pulang', label:'Ketaatan Jam Kerja',          bobot:25,desc:'Kepatuhan jam pulang dan waktu istirahat'},
+      {id:'izin',   label:'Tertib Izin & Cuti',          bobot:20,desc:'Prosedur perizinan dan cuti sesuai aturan'},
+      {id:'seragam',label:'Kepatuhan Atribut & Seragam', bobot:15,desc:'Penggunaan seragam dan atribut kerja'},
+      {id:'sikap',  label:'Sikap & Etika Kerja',         bobot:10,desc:'Sopan santun dan perilaku di lingkungan kerja'}
+    ]
+  },
+  atasan: {
+    label:'Penilaian Atasan Divisi',icon:'🎯',bobot:60,role:'atasan',
+    kriteria:[
+      {id:'kualitas',    label:'Kualitas Pekerjaan',      bobot:30,desc:'Mutu hasil kerja, akurasi, dan ketepatan output'},
+      {id:'produktif',   label:'Produktivitas & Target',   bobot:25,desc:'Pencapaian target dan volume pekerjaan'},
+      {id:'inisiatif',   label:'Inisiatif & Kreativitas',  bobot:20,desc:'Kemampuan memunculkan ide dan solusi inovatif'},
+      {id:'kerjasama',   label:'Kerjasama Tim',            bobot:15,desc:'Kolaborasi dan kontribusi dalam tim'},
+      {id:'pengembangan',label:'Pengembangan Diri',        bobot:10,desc:'Keinginan belajar dan meningkatkan kompetensi'}
+    ]
+  }
+};
+
+const MENUS = {
+  hrd:[
+    {id:'dashboard',  icon:'📊', label:'Dashboard'},
+    {id:'karyawan',   icon:'👥', label:'Data Karyawan'},
+    {id:'nilai-hrd',  icon:'⏰', label:'Nilai Kedisiplinan'},
+    {id:'rekap',      icon:'📋', label:'Rekap KPI'}
+  ],
+  atasan:[
+    {id:'dashboard',      icon:'📊', label:'Dashboard'},
+    {id:'nilai-atasan',   icon:'🎯', label:'Nilai Kinerja'},
+    {id:'rekap',          icon:'📋', label:'Rekap KPI'}
+  ]
+};
+
+// ════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════
+let dbInst = null;
+let currentUser = null; // {role, name, divisi (for atasan)}
+let st = {karyawan:[], penilaian:[], currentPage:'dashboard'};
+let editingKaryawanId = null;
+let penilaianTarget = null; // {karyawanId, periode, penilaianId}
+
+// ════════════════════════════════════════════════════════
+// LOGIN
+// ════════════════════════════════════════════════════════
+let selectedRole = null;
+
+function selectRole(role) {
+  selectedRole = role;
+  document.getElementById('rc-hrd').className = 'role-card' + (role==='hrd'?' selected-hrd':'');
+  document.getElementById('rc-atasan').className = 'role-card' + (role==='atasan'?' selected-atasan':'');
+
+  if (role === 'hrd') {
+    document.getElementById('login-form-area').innerHTML = `
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Nama HRD / Admin</label>
+        <input id="login-name" placeholder="Masukkan nama Anda..." value="">
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label>Password Admin</label>
+        <input type="password" id="login-pass" placeholder="Password..." value="">
+      </div>
+      <button class="btn btn-hrd" style="width:100%;justify-content:center" onclick="doLogin()">Masuk sebagai HRD</button>
+      <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px">Password default: <strong>hrd123</strong></div>`;
+  } else {
+    document.getElementById('login-form-area').innerHTML = `
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Nama Atasan Divisi</label>
+        <input id="login-name" placeholder="Nama Anda (harus sesuai data karyawan)..." value="">
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label>Divisi yang Dipimpin</label>
+        <input id="login-divisi" placeholder="Contoh: IT, Keuangan, HRD...">
+      </div>
+      <button class="btn btn-atasan" style="width:100%;justify-content:center" onclick="doLogin()">Masuk sebagai Atasan</button>
+      <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px">Nama dan divisi harus sesuai data karyawan yang terdaftar</div>`;
+  }
+  setTimeout(()=>document.getElementById('login-name')?.focus(),100);
+}
+
+async function doLogin() {
+  const name = document.getElementById('login-name')?.value.trim();
+  if (!name) { alert('Nama wajib diisi!'); return; }
+
+  if (selectedRole === 'hrd') {
+    const pass = document.getElementById('login-pass')?.value;
+    if (pass !== 'hrd123') { alert('Password salah!'); return; }
+    currentUser = {role:'hrd', name};
+  } else {
+    const divisi = document.getElementById('login-divisi')?.value.trim();
+    if (!divisi) { alert('Divisi wajib diisi!'); return; }
+    currentUser = {role:'atasan', name, divisi};
+  }
+
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'flex';
+  await initApp();
+}
+
+function doLogout() {
+  currentUser = null; selectedRole = null;
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-form-area').innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;padding:8px">Pilih peran di atas untuk melanjutkan</div>';
+  document.getElementById('rc-hrd').className = 'role-card';
+  document.getElementById('rc-atasan').className = 'role-card';
+}
+
+// ════════════════════════════════════════════════════════
+// INIT APP
+// ════════════════════════════════════════════════════════
+async function initApp() {
+  // Sidebar role badge
+  const isHrd = currentUser.role === 'hrd';
+  document.getElementById('sidebar-role-badge').innerHTML =
+    `<span class="role-badge-sidebar ${isHrd?'badge-hrd-side':'badge-atasan-side'}">
+      ${isHrd?'🏢 HRD / Admin':'🎯 Atasan Divisi'}
+    </span>`;
+  document.getElementById('sidebar-user').textContent = currentUser.name + (currentUser.divisi ? ` — ${currentUser.divisi}` : '');
+
+  // Build nav
+  const nav = document.getElementById('sidebar-nav');
+  nav.innerHTML = '<div class="nav-label">Menu</div>' +
+    MENUS[currentUser.role].map(m =>
+      `<button class="nav-item" onclick="showPage('${m.id}')" id="nav-${m.id}">
+        <span class="icon">${m.icon}</span> ${m.label}
+      </button>`
+    ).join('');
+
+  // Load data (offline mode — localStorage)
+  loadFromLocal();
+
+  showPage('dashboard');
+}
+
+async function loadData() {
+  try {
+    const [ks, ps] = await Promise.all([
+      dbInst.collection('karyawan').get(),
+      dbInst.collection('penilaian').get()
+    ]);
+    st.karyawan = []; ks.forEach(d => st.karyawan.push({id:d.id,...d.data()}));
+    st.penilaian = []; ps.forEach(d => st.penilaian.push({id:d.id,...d.data()}));
+  } catch(e) { loadFromLocal(); }
+}
+
+function loadFromLocal() {
+  st.karyawan = JSON.parse(localStorage.getItem('kpi_kar')||'[]');
+  st.penilaian = JSON.parse(localStorage.getItem('kpi_nil')||'[]');
+}
+function saveLocal() {
+  localStorage.setItem('kpi_kar', JSON.stringify(st.karyawan));
+  localStorage.setItem('kpi_nil', JSON.stringify(st.penilaian));
+}
+
+// ════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════
+function showPage(page) {
+  st.currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+  document.getElementById('nav-'+page)?.classList.add('active');
+
+  const titles = {
+    dashboard:    ['Dashboard','Ringkasan KPI seluruh karyawan'],
+    karyawan:     ['Data Karyawan','Kelola daftar karyawan'],
+    'nilai-hrd':  ['Penilaian Kedisiplinan','Input nilai kedisiplinan oleh HRD'],
+    'nilai-atasan':['Penilaian Kinerja','Input nilai kinerja oleh atasan divisi'],
+    rekap:        ['Rekap KPI','Laporan nilai akhir KPI']
+  };
+  const [t,s] = titles[page]||['',''];
+  document.getElementById('page-title').textContent = t;
+  document.getElementById('page-sub').textContent = s;
+
+  const actions = {
+    karyawan: `<button class="btn btn-hrd" onclick="openAddKaryawan()">+ Tambah Karyawan</button>`,
+    dashboard:'', 'nilai-hrd':'', 'nilai-atasan':'', rekap:''
+  };
+  document.getElementById('topbar-action').innerHTML = actions[page]||'';
+
+  const fns = {
+    dashboard: renderDashboard,
+    karyawan: renderKaryawan,
+    'nilai-hrd': renderNilaiHRD,
+    'nilai-atasan': renderNilaiAtasan,
+    rekap: renderRekap
+  };
+  document.getElementById('main-content').innerHTML = fns[page]?.()||'';
+}
+
+// ════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════
+function getPenilaian(karyawanId, periode) {
+  return st.penilaian.filter(p => p.karyawanId === karyawanId && p.periode === periode);
+}
+
+function getHRDScore(karyawanId, periode) {
+  return st.penilaian.find(p => p.karyawanId===karyawanId && p.periode===periode && p.type==='hrd');
+}
+
+function getAtasanScore(karyawanId, periode) {
+  return st.penilaian.find(p => p.karyawanId===karyawanId && p.periode===periode && p.type==='atasan');
+}
+
+function calcNilaiAkhir(hrd, atas) {
+  if (!hrd || !atas) return null;
+  return Math.round(((hrd.skor * 0.4) + (atas.skor * 0.6)) * 10) / 10;
+}
+
+function getGrade(val) {
+  if (val === null || val === undefined) return null;
+  return val >= 86 ? 'A' : val >= 71 ? 'B' : val >= 56 ? 'C' : 'D';
+}
+
+function gradeLabel(g) {
+  return {A:'Sangat Baik',B:'Baik',C:'Cukup',D:'Kurang'}[g]||'-';
+}
+
+function bulanFmt(periode) {
+  if (!periode) return '-';
+  const [y,m] = periode.split('-');
+  const b = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  return `${b[parseInt(m)-1]} ${y}`;
+}
+
+function nowPeriode() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function statusBadge(hrd, atas) {
+  if (hrd && atas) return '<span class="badge badge-a">✓ Lengkap</span>';
+  if (hrd && !atas) return '<span class="badge badge-partial">⏰ HRD ✓ | Atasan —</span>';
+  if (!hrd && atas) return '<span class="badge badge-partial">⏰ HRD — | Atasan ✓</span>';
+  return '<span class="badge badge-pending">Belum dinilai</span>';
+}
+
+function calcCriteriaScore(type, detail) {
+  const cfg = KPI_CFG[type];
+  let t = 0;
+  cfg.kriteria.forEach(c => {t += (detail[c.id]||0) * (c.bobot/100);});
+  return Math.round(t * 10) / 10;
+}
+
+// ════════════════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════════════════
+function renderDashboard() {
+  const isHrd = currentUser.role === 'hrd';
+  const kars = isHrd ? st.karyawan :
+    st.karyawan.filter(k => k.atasan === currentUser.name || k.divisi === currentUser.divisi);
+
+  const periode = nowPeriode();
+  let lengkap=0, hrdOnly=0, atasOnly=0, kosong=0;
+
+  kars.forEach(k => {
+    const h = getHRDScore(k.id, periode);
+    const a = getAtasanScore(k.id, periode);
+    if (h && a) lengkap++;
+    else if (h) hrdOnly++;
+    else if (a) atasOnly++;
+    else kosong++;
+  });
+
+  const nilaiLengkap = kars.map(k => {
+    const h = getHRDScore(k.id, periode);
+    const a = getAtasanScore(k.id, periode);
+    return calcNilaiAkhir(h, a);
+  }).filter(v => v !== null);
+  const avg = nilaiLengkap.length ? (nilaiLengkap.reduce((a,b)=>a+b,0)/nilaiLengkap.length).toFixed(1) : '-';
+
+  const recentAll = [...st.penilaian].reverse().slice(0,6);
+
+  return `
+  ${!isHrd ? `<div class="info-box info-box-atasan">
+    <span style="font-size:16px">🎯</span>
+    <div>Anda masuk sebagai <strong>Atasan Divisi ${currentUser.divisi}</strong>. Hanya karyawan di divisi Anda yang ditampilkan.</div>
+  </div>` : ''}
+
+  <div class="stats-grid">
+    <div class="card">
+      <div class="card-title">${isHrd?'Total Karyawan':'Karyawan Divisi'}</div>
+      <div class="stat-value">${kars.length}</div>
+      <div class="stat-sub">Terdaftar</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Penilaian Lengkap</div>
+      <div class="stat-value" style="color:var(--grade-a)">${lengkap}</div>
+      <div class="stat-sub">HRD + Atasan selesai</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Sebagian Dinilai</div>
+      <div class="stat-value" style="color:var(--warning)">${hrdOnly + atasOnly}</div>
+      <div class="stat-sub">Menunggu salah satu</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Rata-rata KPI</div>
+      <div class="stat-value">${avg}</div>
+      <div class="stat-sub">Bulan ini (data lengkap)</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px">Status Penilaian — ${bulanFmt(periode)}</div>
+      ${[['✅ Lengkap (HRD+Atasan)',lengkap,'grade-a'],['⏰ Menunggu Atasan',hrdOnly,'warning'],['🎯 Menunggu HRD',atasOnly,'atasan'],['⬜ Belum Dinilai',kosong,'text-muted']]
+        .map(([l,v,c])=>`
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:12px;flex:1;color:var(--${c})">${l}</span>
+          <span style="font-weight:700;font-size:14px;color:var(--${c})">${v}</span>
+        </div>`).join('')}
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px">Panduan Penilaian</div>
+      <div style="font-size:12px;color:var(--text-secondary);line-height:1.8">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <span style="background:var(--hrd-light);color:var(--hrd);padding:2px 8px;border-radius:6px;font-weight:600;font-size:11px">HRD</span>
+          <span>Menilai <strong>Kedisiplinan</strong> (40% bobot)</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <span style="background:var(--atasan-light);color:var(--atasan);padding:2px 8px;border-radius:6px;font-weight:600;font-size:11px">Atasan</span>
+          <span>Menilai <strong>Kinerja</strong> (60% bobot)</span>
+        </div>
+        <div style="padding-top:10px;border-top:1px solid var(--border)">
+          ${[['A','86–100','Sangat Baik'],['B','71–85','Baik'],['C','56–70','Cukup'],['D','0–55','Kurang']]
+            .map(([g,r,l])=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span class="badge badge-${g.toLowerCase()}">${g}</span>
+              <span style="font-size:11px;color:var(--text-secondary)">${r} — ${l}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  ${kars.length > 0 ? `
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">Status Karyawan — ${bulanFmt(periode)}</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Karyawan</th><th>Divisi</th>
+          <th>Nilai HRD</th><th>Nilai Atasan</th>
+          <th>KPI Akhir</th><th>Status</th>
+        </tr></thead>
+        <tbody>
+          ${kars.slice(0,8).map(k => {
+            const h = getHRDScore(k.id, periode);
+            const a = getAtasanScore(k.id, periode);
+            const na = calcNilaiAkhir(h, a);
+            const g = getGrade(na);
+            return `<tr onclick="na!==null&&showDetailByKar('${k.id}','${periode}')" style="${na?'cursor:pointer':''}">
+              <td><div class="avatar-wrap">
+                <div class="avatar av-blue">${k.nama?.[0]?.toUpperCase()||'?'}</div>
+                <div><div class="td-name">${k.nama}</div><div class="td-dept">${k.jabatan}</div></div>
+              </div></td>
+              <td>${k.divisi}</td>
+              <td>${h ? `<span style="font-weight:700;color:var(--hrd)">${h.skor}</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
+              <td>${a ? `<span style="font-weight:700;color:var(--atasan)">${a.skor}</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
+              <td>${na !== null ? `<strong style="font-size:15px">${na}</strong>` : '<span style="color:var(--text-muted)">—</span>'}</td>
+              <td>${g ? `<span class="badge badge-${g.toLowerCase()}">${g}</span>` : statusBadge(h,a)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>` : `<div class="card"><div class="empty"><div class="empty-icon">📊</div>
+    <h3>Belum Ada Data</h3>
+    <p>${isHrd ? 'Mulai tambah karyawan di menu Data Karyawan' : 'Tidak ada karyawan di divisi Anda yang terdaftar'}</p>
+  </div></div>`}`;
+}
+
+// ════════════════════════════════════════════════════════
+// KARYAWAN (HRD only)
+// ════════════════════════════════════════════════════════
+function renderKaryawan() {
+  if (st.karyawan.length === 0) return `<div class="card"><div class="empty">
+    <div class="empty-icon">👥</div><h3>Belum Ada Karyawan</h3>
+    <p>Klik "+ Tambah Karyawan" untuk mendaftarkan karyawan</p>
+  </div></div>`;
+
+  return `<div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Karyawan</th><th>NIP</th><th>Jabatan</th><th>Divisi</th><th>Atasan Divisi</th><th>Aksi</th></tr></thead>
+    <tbody>
+      ${st.karyawan.map(k=>`<tr>
+        <td><div class="avatar-wrap">
+          <div class="avatar av-blue">${k.nama?.[0]?.toUpperCase()||'?'}</div>
+          <div class="td-name">${k.nama}</div>
+        </div></td>
+        <td style="color:var(--text-muted)">${k.nip||'-'}</td>
+        <td>${k.jabatan||'-'}</td>
+        <td>${k.divisi||'-'}</td>
+        <td><span class="badge badge-atasan-b">${k.atasan||'-'}</span></td>
+        <td><div style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-secondary" onclick="editKaryawan('${k.id}')">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="delKaryawan('${k.id}')">Hapus</button>
+        </div></td>
+      </tr>`).join('')}
+    </tbody>
+  </table></div></div>`;
+}
+
+// ════════════════════════════════════════════════════════
+// NILAI HRD (Kedisiplinan)
+// ════════════════════════════════════════════════════════
+function renderNilaiHRD() {
+  const periode = nowPeriode();
+  if (st.karyawan.length === 0) return `<div class="card"><div class="empty">
+    <div class="empty-icon">⏰</div><h3>Belum Ada Karyawan</h3>
+    <p>Tambah karyawan terlebih dahulu</p>
+  </div></div>`;
+
+  return `
+  <div class="info-box info-box-hrd">
+    <span style="font-size:16px">🏢</span>
+    <div>Anda menilai komponen <strong>Kedisiplinan (40%)</strong>. Penilaian atasan divisi (60%) diisi terpisah oleh masing-masing atasan.</div>
+  </div>
+  <div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Karyawan</th><th>Divisi</th><th>Atasan Divisi</th><th>Status HRD</th><th>Nilai Kedisiplinan</th><th>Aksi</th></tr></thead>
+    <tbody>
+      ${st.karyawan.map(k => {
+        const h = getHRDScore(k.id, periode);
+        const a = getAtasanScore(k.id, periode);
+        const na = calcNilaiAkhir(h,a);
+        return `<tr>
+          <td><div class="avatar-wrap">
+            <div class="avatar av-purple">${k.nama?.[0]?.toUpperCase()||'?'}</div>
+            <div><div class="td-name">${k.nama}</div><div class="td-dept">${k.nip}</div></div>
+          </div></td>
+          <td>${k.divisi}</td>
+          <td><span class="badge badge-atasan-b">${k.atasan}</span></td>
+          <td>${h ? '<span class="badge badge-hrd">✓ Sudah diisi</span>' : '<span class="badge badge-pending">Belum</span>'}</td>
+          <td>${h ? `<div class="score-bar-wrap">
+            <div class="score-bar-track"><div class="score-bar-fill fill-hrd" style="width:${h.skor}%"></div></div>
+            <span class="score-val" style="color:var(--hrd)">${h.skor}</span>
+          </div>` : '<span style="color:var(--text-muted)">—</span>'}</td>
+          <td><button class="btn btn-sm ${h?'btn-secondary':'btn-hrd'}" onclick="openNilaiHRD('${k.id}','${periode}')">
+            ${h ? '✏️ Edit' : '+ Nilai'}
+          </button></td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table></div></div>`;
+}
+
+// ════════════════════════════════════════════════════════
+// NILAI ATASAN
+// ════════════════════════════════════════════════════════
+function renderNilaiAtasan() {
+  const periode = nowPeriode();
+  // Filter karyawan yang sesuai atasan ini
+  const myKaryawan = st.karyawan.filter(k =>
+    k.atasan?.toLowerCase() === currentUser.name?.toLowerCase() ||
+    k.divisi?.toLowerCase() === currentUser.divisi?.toLowerCase()
+  );
+
+  if (myKaryawan.length === 0) return `<div class="card"><div class="empty">
+    <div class="empty-icon">🎯</div><h3>Tidak Ada Karyawan</h3>
+    <p>Belum ada karyawan yang terdaftar dengan Anda sebagai atasan divisi "<strong>${currentUser.divisi}</strong>".<br>Pastikan nama atasan dan divisi sesuai data yang diinput HRD.</p>
+  </div></div>`;
+
+  return `
+  <div class="info-box info-box-atasan">
+    <span style="font-size:16px">🎯</span>
+    <div>Anda menilai komponen <strong>Kinerja Karyawan (60%)</strong> untuk divisi <strong>${currentUser.divisi}</strong>. Nilai kedisiplinan (40%) diisi oleh HRD.</div>
+  </div>
+  <div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Karyawan</th><th>Jabatan</th><th>Status Atasan</th><th>Nilai Kinerja</th><th>KPI Akhir</th><th>Aksi</th></tr></thead>
+    <tbody>
+      ${myKaryawan.map(k => {
+        const h = getHRDScore(k.id, periode);
+        const a = getAtasanScore(k.id, periode);
+        const na = calcNilaiAkhir(h, a);
+        const g = getGrade(na);
+        return `<tr>
+          <td><div class="avatar-wrap">
+            <div class="avatar av-teal">${k.nama?.[0]?.toUpperCase()||'?'}</div>
+            <div><div class="td-name">${k.nama}</div><div class="td-dept">${k.nip}</div></div>
+          </div></td>
+          <td>${k.jabatan}</td>
+          <td>${a ? '<span class="badge badge-atasan-b">✓ Sudah diisi</span>' : '<span class="badge badge-pending">Belum</span>'}</td>
+          <td>${a ? `<div class="score-bar-wrap">
+            <div class="score-bar-track"><div class="score-bar-fill fill-atasan" style="width:${a.skor}%"></div></div>
+            <span class="score-val" style="color:var(--atasan)">${a.skor}</span>
+          </div>` : '<span style="color:var(--text-muted)">—</span>'}</td>
+          <td>${na !== null ? `<div>
+            <strong style="font-size:15px">${na}</strong>
+            ${g ? `<span class="badge badge-${g.toLowerCase()}" style="margin-left:6px">${g}</span>` : ''}
+          </div>` : (!h ? '<span class="badge badge-warning-b" style="background:var(--warning-bg);color:var(--warning);font-size:11px;padding:2px 8px;border-radius:6px">Menunggu HRD</span>' : '<span style="color:var(--text-muted)">—</span>')}</td>
+          <td><button class="btn btn-sm ${a?'btn-secondary':'btn-atasan'}" onclick="openNilaiAtasan('${k.id}','${periode}')">
+            ${a ? '✏️ Edit' : '+ Nilai'}
+          </button></td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table></div></div>`;
+}
+
+// ════════════════════════════════════════════════════════
+// REKAP
+// ════════════════════════════════════════════════════════
+function renderRekap() {
+  const isHrd = currentUser.role === 'hrd';
+  const kars = isHrd ? st.karyawan :
+    st.karyawan.filter(k => k.atasan===currentUser.name || k.divisi===currentUser.divisi);
+
+  const periode = nowPeriode();
+
+  const rows = kars.map(k => {
+    const h = getHRDScore(k.id, periode);
+    const a = getAtasanScore(k.id, periode);
+    const na = calcNilaiAkhir(h, a);
+    return {k, h, a, na, g: getGrade(na)};
+  }).sort((x,y) => (y.na||0) - (x.na||0));
+
+  if (rows.length === 0) return `<div class="card"><div class="empty">
+    <div class="empty-icon">📋</div><h3>Belum Ada Data</h3>
+    <p>Lakukan penilaian terlebih dahulu</p>
+  </div></div>`;
+
+  return `
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    ${['Semua','A','B','C','D','Pending'].map(f=>`
+    <button class="btn btn-sm btn-secondary" id="rf-${f}" onclick="filterRekap('${f}',${JSON.stringify(rows).replace(/</g,'&lt;')})"
+      style="${f==='Semua'?'background:var(--accent);color:#fff;border-color:var(--accent)':''}">
+      ${f==='Semua'?'Semua':f==='Pending'?'⏳ Pending':'Grade '+f}
+    </button>`).join('')}
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Karyawan</th><th>Divisi</th>
+          <th>HRD (40%)</th><th>Atasan (60%)</th><th>KPI Akhir</th><th>Grade</th><th></th>
+        </tr></thead>
+        <tbody id="rekap-tbody">${renderRekapRows(rows)}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function renderRekapRows(rows) {
+  return rows.map((r,i)=>`<tr>
+    <td style="color:var(--text-muted);font-weight:700">${i+1}</td>
+    <td><div class="avatar-wrap">
+      <div class="avatar av-blue">${r.k.nama?.[0]?.toUpperCase()}</div>
+      <div><div class="td-name">${r.k.nama}</div><div class="td-dept">${r.k.jabatan}</div></div>
+    </div></td>
+    <td>${r.k.divisi}</td>
+    <td>${r.h ? `<div class="score-bar-wrap">
+      <div class="score-bar-track"><div class="score-bar-fill fill-hrd" style="width:${r.h.skor}%"></div></div>
+      <span class="score-val" style="color:var(--hrd)">${r.h.skor}</span>
+    </div>` : '<span class="badge badge-hrd" style="opacity:.4">Belum</span>'}</td>
+    <td>${r.a ? `<div class="score-bar-wrap">
+      <div class="score-bar-track"><div class="score-bar-fill fill-atasan" style="width:${r.a.skor}%"></div></div>
+      <span class="score-val" style="color:var(--atasan)">${r.a.skor}</span>
+    </div>` : '<span class="badge badge-atasan-b" style="opacity:.4">Belum</span>'}</td>
+    <td>${r.na!==null ? `<strong style="font-size:15px;font-family:'DM Serif Display',serif">${r.na}</strong>` : statusBadge(r.h,r.a)}</td>
+    <td>${r.g ? `<span class="badge badge-${r.g.toLowerCase()}">${r.g}</span>` : '<span class="badge badge-pending">—</span>'}</td>
+    <td>${r.na!==null ? `<button class="btn btn-sm btn-secondary" onclick="showDetailByKar('${r.k.id}','${nowPeriode()}')">Detail</button>` : ''}</td>
+  </tr>`).join('');
+}
+
+function filterRekap(f, rows) {
+  document.querySelectorAll('[id^="rf-"]').forEach(b=>{b.style.background='';b.style.color='';b.style.borderColor='';});
+  const btn = document.getElementById('rf-'+f);
+  if(btn){btn.style.background='var(--accent)';btn.style.color='#fff';btn.style.borderColor='var(--accent)';}
+  const filtered = f==='Semua' ? rows :
+    f==='Pending' ? rows.filter(r=>r.na===null) :
+    rows.filter(r=>r.g===f);
+  const tbody = document.getElementById('rekap-tbody');
+  if(tbody) tbody.innerHTML = renderRekapRows(filtered);
+}
+
+// ════════════════════════════════════════════════════════
+// MODAL KARYAWAN
+// ════════════════════════════════════════════════════════
+function openAddKaryawan() {
+  editingKaryawanId = null;
+  document.getElementById('mk-title').textContent = 'Tambah Karyawan';
+  ['k-nama','k-nip','k-jabatan','k-divisi','k-atasan'].forEach(id=>document.getElementById(id).value='');
+  openModal('modal-karyawan');
+}
+function editKaryawan(id) {
+  const k = st.karyawan.find(k=>k.id===id); if(!k) return;
+  editingKaryawanId = id;
+  document.getElementById('mk-title').textContent = 'Edit Karyawan';
+  document.getElementById('k-nama').value = k.nama||'';
+  document.getElementById('k-nip').value = k.nip||'';
+  document.getElementById('k-jabatan').value = k.jabatan||'';
+  document.getElementById('k-divisi').value = k.divisi||'';
+  document.getElementById('k-atasan').value = k.atasan||'';
+  openModal('modal-karyawan');
+}
+async function saveKaryawan() {
+  const data = {
+    nama:document.getElementById('k-nama').value.trim(),
+    nip:document.getElementById('k-nip').value.trim(),
+    jabatan:document.getElementById('k-jabatan').value.trim(),
+    divisi:document.getElementById('k-divisi').value.trim(),
+    atasan:document.getElementById('k-atasan').value.trim()
+  };
+  if (!data.nama) { alert('Nama wajib diisi!'); return; }
+  if (editingKaryawanId) {
+    if(dbInst) await dbInst.doc('karyawan/'+editingKaryawanId).set(data);
+    const idx = st.karyawan.findIndex(k=>k.id===editingKaryawanId);
+    if(idx>=0) st.karyawan[idx]={id:editingKaryawanId,...data};
+  } else {
+    const id='k_'+Date.now();
+    if(dbInst) await dbInst.doc('karyawan/'+id).set({...data,createdAt:Date.now()});
+    st.karyawan.push({id,...data});
+  }
+  saveLocal(); closeModal('modal-karyawan'); showPage(st.currentPage);
+}
+async function delKaryawan(id) {
+  if(!confirm('Hapus karyawan ini? Semua data penilaian terkait juga terhapus.')) return;
+  if(dbInst) {
+    await dbInst.doc('karyawan/'+id).delete();
+    const rel = st.penilaian.filter(p=>p.karyawanId===id);
+    for(const p of rel) await dbInst.doc('penilaian/'+p.id).delete();
+  }
+  st.karyawan = st.karyawan.filter(k=>k.id!==id);
+  st.penilaian = st.penilaian.filter(p=>p.karyawanId!==id);
+  saveLocal(); showPage(st.currentPage);
+}
+
+// ════════════════════════════════════════════════════════
+// MODAL NILAI HRD
+// ════════════════════════════════════════════════════════
+function openNilaiHRD(karyawanId, periode) {
+  const k = st.karyawan.find(k=>k.id===karyawanId);
+  penilaianTarget = {karyawanId, periode};
+  const existing = getHRDScore(karyawanId, periode);
+
+  document.getElementById('modal-hrd-body').innerHTML = `
+    <div style="background:var(--hrd-light);border:1px solid #D6BCFA;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:11px;color:var(--hrd);margin-bottom:4px;font-weight:600">KARYAWAN YANG DINILAI</div>
+      <div style="font-weight:700;font-size:15px">${k?.nama}</div>
+      <div style="font-size:12px;color:var(--text-secondary)">${k?.jabatan} — ${k?.divisi} | Periode: <strong>${bulanFmt(periode)}</strong></div>
+    </div>
+
+    <div class="section-head">
+      <h3>⏰ Kriteria Kedisiplinan</h3>
+      <span class="weight-chip chip-hrd">Bobot 40%</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="criteria-grid">
+      ${KPI_CFG.kedisiplinan.kriteria.map(c=>`
+        <div class="criteria-card">
+          <div class="criteria-name">${c.label} <span style="color:var(--text-muted);font-weight:400">(${c.bobot}%)</span></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">${c.desc}</div>
+          <div class="score-input-wrap">
+            <input type="range" id="sh-${c.id}" min="0" max="100" value="${existing?.detail?.[c.id]||75}"
+              style="accent-color:var(--hrd)" oninput="updateHRDScore('${c.id}',this.value)">
+            <input type="number" class="score-display" id="dh-${c.id}" value="${existing?.detail?.[c.id]||75}" min="0" max="100"
+              oninput="updateHRDScoreN('${c.id}',this.value)">
+          </div>
+        </div>`).join('')}
+    </div>
+    <div class="score-summary" id="hrd-summary">${renderHRDSummary()}</div>
+    <div class="form-group" style="margin-top:16px">
+      <label>Catatan HRD (opsional)</label>
+      <textarea id="hrd-catatan" placeholder="Catatan dari HRD...">${existing?.catatan||''}</textarea>
+    </div>`;
+  openModal('modal-hrd');
+  setTimeout(()=>updateHRDSummaryEl(),100);
+}
+
+function updateHRDScore(id,val) {
+  val=Math.min(100,Math.max(0,parseInt(val)||0));
+  const d=document.getElementById('dh-'+id); if(d) d.value=val;
+  updateHRDSummaryEl();
+}
+function updateHRDScoreN(id,val) {
+  val=Math.min(100,Math.max(0,parseInt(val)||0));
+  const r=document.getElementById('sh-'+id); if(r) r.value=val;
+  updateHRDSummaryEl();
+}
+function calcHRDSkor() {
+  let t=0;
+  KPI_CFG.kedisiplinan.kriteria.forEach(c=>{
+    t+=(parseInt(document.getElementById('sh-'+c.id)?.value)||0)*(c.bobot/100);
+  });
+  return Math.round(t*10)/10;
+}
+function renderHRDSummary() {
+  try {
+    const s=calcHRDSkor();
+    return `<div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase">Skor Kedisiplinan</div>
+    <div class="score-row total"><span>⏰ Total Skor Kedisiplinan</span>
+      <span style="font-size:20px;font-family:'DM Serif Display',serif;color:var(--hrd)">${s.toFixed(1)}</span>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:8px">Kontribusi ke KPI Akhir: ${s.toFixed(1)} × 40% = <strong>${(s*0.4).toFixed(1)}</strong></div>`;
+  } catch(e){return '';}
+}
+function updateHRDSummaryEl() {
+  const el=document.getElementById('hrd-summary'); if(el) el.innerHTML=renderHRDSummary();
+}
+async function saveNilaiHRD() {
+  if(!penilaianTarget) return;
+  const {karyawanId, periode} = penilaianTarget;
+  const skor = calcHRDSkor();
+  const detail = {};
+  KPI_CFG.kedisiplinan.kriteria.forEach(c=>{ detail[c.id]=parseInt(document.getElementById('sh-'+c.id)?.value||0); });
+  const data = {karyawanId, periode, type:'hrd', skor, detail,
+    catatan:document.getElementById('hrd-catatan')?.value||'',
+    penilai:currentUser.name, updatedAt:Date.now()};
+  const existing = getHRDScore(karyawanId, periode);
+  if (existing) {
+    if(dbInst) await dbInst.doc('penilaian/'+existing.id).set(data);
+    const idx=st.penilaian.findIndex(p=>p.id===existing.id);
+    if(idx>=0) st.penilaian[idx]={...st.penilaian[idx],...data};
+  } else {
+    const id='n_'+Date.now();
+    if(dbInst) await dbInst.doc('penilaian/'+id).set(data);
+    st.penilaian.push({id,...data});
+  }
+  saveLocal(); closeModal('modal-hrd'); showPage(st.currentPage);
+}
+
+// ════════════════════════════════════════════════════════
+// MODAL NILAI ATASAN
+// ════════════════════════════════════════════════════════
+function openNilaiAtasan(karyawanId, periode) {
+  const k = st.karyawan.find(k=>k.id===karyawanId);
+  penilaianTarget = {karyawanId, periode};
+  const existing = getAtasanScore(karyawanId, periode);
+  const hrdScore = getHRDScore(karyawanId, periode);
+
+  document.getElementById('modal-atasan-body').innerHTML = `
+    <div style="background:var(--atasan-light);border:1px solid #81E6D9;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:11px;color:var(--atasan);margin-bottom:4px;font-weight:600">KARYAWAN YANG DINILAI</div>
+      <div style="font-weight:700;font-size:15px">${k?.nama}</div>
+      <div style="font-size:12px;color:var(--text-secondary)">${k?.jabatan} — ${k?.divisi} | Periode: <strong>${bulanFmt(periode)}</strong></div>
+    </div>
+
+    ${!hrdScore ? `<div class="info-box info-box-warning">
+      <span>⚠️</span>
+      <div>HRD belum mengisi penilaian kedisiplinan. Anda tetap bisa mengisi penilaian kinerja, dan KPI akhir akan dihitung setelah HRD mengisi bagiannya.</div>
+    </div>` : ''}
+
+    <div class="section-head">
+      <h3>🎯 Kriteria Kinerja</h3>
+      <span class="weight-chip chip-atasan">Bobot 60%</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="criteria-grid">
+      ${KPI_CFG.atasan.kriteria.map(c=>`
+        <div class="criteria-card">
+          <div class="criteria-name">${c.label} <span style="color:var(--text-muted);font-weight:400">(${c.bobot}%)</span></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">${c.desc}</div>
+          <div class="score-input-wrap">
+            <input type="range" id="sa-${c.id}" min="0" max="100" value="${existing?.detail?.[c.id]||75}"
+              style="accent-color:var(--atasan)" oninput="updateAtasanScore('${c.id}',this.value)">
+            <input type="number" class="score-display" id="da-${c.id}" value="${existing?.detail?.[c.id]||75}" min="0" max="100"
+              oninput="updateAtasanScoreN('${c.id}',this.value)">
+          </div>
+        </div>`).join('')}
+    </div>
+    <div class="score-summary" id="atasan-summary">${renderAtasanSummary(hrdScore)}</div>
+    <div class="form-group" style="margin-top:16px">
+      <label>Catatan Atasan (opsional)</label>
+      <textarea id="atasan-catatan" placeholder="Komentar / catatan untuk karyawan...">${existing?.catatan||''}</textarea>
+    </div>`;
+  openModal('modal-atasan');
+  setTimeout(()=>updateAtasanSummaryEl(hrdScore),100);
+}
+
+function updateAtasanScore(id,val) {
+  val=Math.min(100,Math.max(0,parseInt(val)||0));
+  const d=document.getElementById('da-'+id); if(d) d.value=val;
+  const h=getHRDScore(penilaianTarget?.karyawanId,penilaianTarget?.periode);
+  updateAtasanSummaryEl(h);
+}
+function updateAtasanScoreN(id,val) {
+  val=Math.min(100,Math.max(0,parseInt(val)||0));
+  const r=document.getElementById('sa-'+id); if(r) r.value=val;
+  const h=getHRDScore(penilaianTarget?.karyawanId,penilaianTarget?.periode);
+  updateAtasanSummaryEl(h);
+}
+function calcAtasanSkor() {
+  let t=0;
+  KPI_CFG.atasan.kriteria.forEach(c=>{
+    t+=(parseInt(document.getElementById('sa-'+c.id)?.value)||0)*(c.bobot/100);
+  });
+  return Math.round(t*10)/10;
+}
+function renderAtasanSummary(hrdScore) {
+  try {
+    const sa=calcAtasanSkor();
+    const na = hrdScore ? calcNilaiAkhir(hrdScore,{skor:sa}) : null;
+    const g = getGrade(na);
+    return `<div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase">Skor & Proyeksi</div>
+    <div class="score-row">
+      <span>🎯 Skor Kinerja Anda</span>
+      <span style="font-weight:700;color:var(--atasan)">${sa.toFixed(1)}</span>
+    </div>
+    <div class="score-row">
+      <span>⏰ Skor Kedisiplinan (HRD)</span>
+      <span style="font-weight:700;color:var(--hrd)">${hrdScore ? hrdScore.skor : '—'}</span>
+    </div>
+    ${na!==null ? `<div class="score-row total">
+      <span>Proyeksi KPI Akhir</span>
+      <span style="font-size:18px;font-family:'DM Serif Display',serif">${na.toFixed(1)}
+        <span class="badge badge-${g?.toLowerCase()}" style="margin-left:8px">${g} — ${gradeLabel(g)}</span>
+      </span>
+    </div>` : `<div class="score-row total"><span>KPI Akhir</span>
+      <span style="color:var(--text-muted);font-size:13px">Menunggu penilaian HRD</span>
+    </div>`}`;
+  } catch(e){return '';}
+}
+function updateAtasanSummaryEl(h) {
+  const el=document.getElementById('atasan-summary'); if(el) el.innerHTML=renderAtasanSummary(h);
+}
+async function saveNilaiAtasan() {
+  if(!penilaianTarget) return;
+  const {karyawanId, periode} = penilaianTarget;
+  const skor = calcAtasanSkor();
+  const detail = {};
+  KPI_CFG.atasan.kriteria.forEach(c=>{ detail[c.id]=parseInt(document.getElementById('sa-'+c.id)?.value||0); });
+  const data = {karyawanId, periode, type:'atasan', skor, detail,
+    catatan:document.getElementById('atasan-catatan')?.value||'',
+    penilai:currentUser.name, updatedAt:Date.now()};
+  const existing = getAtasanScore(karyawanId, periode);
+  if (existing) {
+    if(dbInst) await dbInst.doc('penilaian/'+existing.id).set(data);
+    const idx=st.penilaian.findIndex(p=>p.id===existing.id);
+    if(idx>=0) st.penilaian[idx]={...st.penilaian[idx],...data};
+  } else {
+    const id='n_'+Date.now();
+    if(dbInst) await dbInst.doc('penilaian/'+id).set(data);
+    st.penilaian.push({id,...data});
+  }
+  saveLocal(); closeModal('modal-atasan'); showPage(st.currentPage);
+}
+
+// ════════════════════════════════════════════════════════
+// DETAIL
+// ════════════════════════════════════════════════════════
+function showDetailByKar(karyawanId, periode) {
+  const k = st.karyawan.find(k=>k.id===karyawanId);
+  const h = getHRDScore(karyawanId, periode);
+  const a = getAtasanScore(karyawanId, periode);
+  const na = calcNilaiAkhir(h, a);
+  const g = getGrade(na);
+
+  const buildSect = (cfg, rec) => {
+    if (!rec) return `<div class="kpi-section"><div class="kpi-section-head">
+      <div class="kpi-section-title">${cfg.icon} ${cfg.label}</div>
+      <span class="badge badge-pending">Belum diisi</span>
+    </div></div>`;
+    return `<div class="kpi-section">
+      <div class="kpi-section-head">
+        <div class="kpi-section-title">${cfg.icon} ${cfg.label}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="color:var(--text-muted);font-size:12px">Bobot ${cfg.bobot}%</span>
+          <strong style="font-size:18px">${rec.skor}</strong>
+        </div>
+      </div>
+      <div class="kpi-section-body">
+        ${cfg.kriteria.map(c=>{
+          const val=rec.detail?.[c.id]||0;
+          const cg=val>=86?'a':val>=71?'b':val>=56?'c':'d';
+          return `<div class="criteria-row">
+            <div><div class="criteria-label">${c.label}</div><div class="criteria-weight">Bobot ${c.bobot}%</div></div>
+            <div class="score-bar-wrap" style="min-width:160px">
+              <div class="score-bar-track"><div class="score-bar-fill fill-${cg}" style="width:${val}%"></div></div>
+              <span class="score-val" style="color:var(--grade-${cg})">${val}</span>
+            </div>
+          </div>`;
+        }).join('')}
+        ${rec.catatan?`<div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--text-secondary)">
+          <strong>Catatan:</strong> ${rec.catatan}
+        </div>`:''}
+      </div>
+    </div>`;
+  };
+
+  document.getElementById('modal-detail-body').innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">📅 Periode: ${bulanFmt(periode)}</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:24px">${k?.nama}</div>
+        <div style="font-size:12px;color:var(--text-muted)">${k?.jabatan} — ${k?.divisi}</div>
+      </div>
+      ${na!==null?`<div style="text-align:right">
+        <div style="font-family:'DM Serif Display',serif;font-size:40px;line-height:1">${na.toFixed(1)}</div>
+        <span class="badge badge-${g?.toLowerCase()}" style="font-size:13px;padding:5px 14px">${g} — ${gradeLabel(g)}</span>
+      </div>`:statusBadge(h,a)}
+    </div>
+    ${buildSect(KPI_CFG.kedisiplinan, h)}
+    ${buildSect(KPI_CFG.atasan, a)}
+    ${na!==null?`<div class="score-summary">
+      <div class="score-row"><span>⏰ Kedisiplinan (${h.skor}) × 40%</span><span style="font-weight:600">${(h.skor*0.4).toFixed(1)}</span></div>
+      <div class="score-row"><span>🎯 Kinerja (${a.skor}) × 60%</span><span style="font-weight:600">${(a.skor*0.6).toFixed(1)}</span></div>
+      <div class="score-row total"><span>KPI Akhir</span><span style="font-size:20px;font-family:'DM Serif Display',serif">${na.toFixed(1)}</span></div>
+    </div>`:''}`;
+  openModal('modal-detail');
+}
+
+// ════════════════════════════════════════════════════════
+// MODAL HELPERS
+// ════════════════════════════════════════════════════════
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
+});
+
+document.querySelectorAll('input').forEach(i=>{
+  i.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin?.();});
+});
+
+// ════════════════════════════════════════════════════════
+// DOWNLOAD OFFLINE VERSION
+// ════════════════════════════════════════════════════════
+function downloadHTML() {
+  // Serialize current data into the standalone file
+  const karData = JSON.stringify(st.karyawan);
+  const nilData = JSON.stringify(st.penilaian);
+
+  // Get the current page source and embed data + make offline-ready
+  const src = document.documentElement.outerHTML;
+
+  // Build standalone version: replace claude.use('db') with localStorage-only,
+  // and pre-seed with current data
+  const standalone = `<!DOCTYPE html>
+<!-- Sistem KPI Karyawan — versi offline/standalone -->
+` + src
+    // Remove the capabilities db call — offline uses localStorage only
+    .replace(
+      /dbInst = await claude\.use\('db'\);[\s\S]*?await loadData\(\);/,
+      `loadFromLocal();`
+    )
+    // Inject pre-seeded data into localStorage on load
+    .replace(
+      '// INIT\ninit();',
+      `// Pre-seed data from export
+(function(){
+  const kar = ${karData};
+  const nil = ${nilData};
+  const existK = localStorage.getItem('kpi_kar');
+  const existN = localStorage.getItem('kpi_nil');
+  // Only seed if localStorage is empty or data from file is newer/bigger
+  if(!existK || JSON.parse(existK).length < kar.length) localStorage.setItem('kpi_kar', JSON.stringify(kar));
+  if(!existN || JSON.parse(existN).length < nil.length) localStorage.setItem('kpi_nil', JSON.stringify(nil));
+})();
+
+// INIT (offline mode — localStorage only)
+async function init() {
+  loadFromLocal();
+  // No db, skip
+}
+init();`
+    );
+
+  const blob = new Blob([standalone], {type: 'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'sistem-kpi-karyawan.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+
+
+</body></html>
